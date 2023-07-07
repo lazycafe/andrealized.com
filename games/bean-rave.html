@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
   </head>
   <body>
-    <div id="mycanvas" style="width: 100%; height: 300px;"></div>
     <!-- <a href="/" style="position: absolute; top: 5; right: 0; z-index: 99999">Quit</a> -->
     <script type="module">
       import kaboom from "https://unpkg.com/kaboom@3000.0.1/dist/kaboom.mjs";
@@ -13,20 +12,18 @@
       // initialize context
       kaboom({
         background: [49, 53, 59],
-        root: document.querySelector("#mycanvas"),
+        // root: document.querySelector("#mycanvas"),
       });
 
-      const GROUND_HEIGHT = 1;
+      const GROUND_HEIGHT = 200;
       const GROUND_LEVEL = height() - GROUND_HEIGHT;
       const JUMP_FORCE = 1000;
       const GRAVITY = 3000;
       const STALAGMITE_HEIGHT = 80;
-      const STALACTITE_HEIGHT = 220;
+      const STALACTITE_HEIGHT = height() - GROUND_HEIGHT - 80;
 
       let score = 0;
 
-      // loadSprite("bean", "/assets/bean.png");
-      // loadSprite("bean-low", "/assets/bean-low.png");
       loadSpriteAtlas("/assets/beananim.png", {
         "bean": {
           x: 0,
@@ -38,12 +35,32 @@
             idle: 0,
             duck: 1,
             jump: 2,
-          }
+          },
         }
       });
-      scene("start", () => {
+
+      loadSound("bgmusic", "/assets/the-business.mp3");
+      play("bgmusic", {
+          volume: 0.8,
+          loop: true
+        });
+
+      scene("instructions", () => {
         let getText = () =>
-          `score: ${score}\ntap to start again`;
+          `tap to start\n\n\ninstructions:\n jump: UP ARROW or tap the sky\n duck: DOWN ARROW or tap the ground`;
+
+        let titleText = add([
+          text(getText(), { size: 14 }),
+          pos(center()),
+          anchor("center"),
+        ]);
+        
+        onClick(() => {
+          go("game");
+        });
+      });
+      scene("end", () => {
+        let getText = () => `score: ${score}\n\ntap to restart`;
 
         let titleText = add([
           text(getText(), { size: 14 }),
@@ -95,15 +112,25 @@
         // obstacles
         function addStalagmiteOrStalactite() {
           let randomInteger = randi(2);
+          let randomColorInteger = randi(6);
+          let randomColor;
+          switch(randomColorInteger) {
+            case 0: randomColor = new Color(252, 32, 3); break;
+            case 1: randomColor = new Color(252, 148, 3); break;
+            case 2: randomColor = new Color(252, 244, 3); break;
+            case 3: randomColor = new Color(11, 252, 3); break;
+            case 4: randomColor = new Color(3, 244, 252); break;
+            case 5: randomColor = new Color(227, 3, 252); break;
+          }
+
           if (randomInteger === 0) {
             let stalagmite = add([
               rect(15, STALAGMITE_HEIGHT),
               area(),
-              outline(4),
               pos(width(), GROUND_LEVEL),
               anchor("botleft"),
               offscreen({ destroy: true }),
-              // color(255, 180, 255),
+              color(randomColor),
               move(LEFT, 300),
               "obstacle",
               "stalagmite",
@@ -117,11 +144,10 @@
             let stalactite = add([
               rect(15, STALACTITE_HEIGHT),
               area(),
-              outline(4),
               pos(width(), STALACTITE_HEIGHT),
               anchor("botleft"),
               offscreen({ destroy: true }),
-              // color(255, 180, 255),
+              color(randomColor),
               move(LEFT, 300),
               "obstacle",
               "stalactite",
@@ -161,18 +187,35 @@
           idle();
         });
 
-        bean.onCollide("obstacle", (obj) => {
-          if (obj.is('stalactite')) {
-            if (bean.state !== 'duck') {
-              go("start");
+        bean.onUpdate(() => {
+          let obstacles = get('obstacle');
+          // debug.log(obstacles);
+          for (const obstacle of obstacles) {
+            let colliding = bean.isOverlapping(obstacle);
+            if (colliding && obstacle.is('stalactite') && bean.state !== 'duck') {
+              addKaboom(bean.screenPos());
+              go("end");
+            } else if (colliding && obstacle.is('stalagmite') && bean.state !== 'jump') {
+              addKaboom(bean.screenPos());
+              go("end");
             }
           }
-          if (obj.is('stalagmite')) {
-            if (bean.state !== 'jump') {
-              go("start");
-            }
-          }
-        });
+        })
+
+        // bean.onCollide("obstacle", (obj) => {
+        //   if (obj.is('stalactite')) {
+        //     if (bean.state !== 'duck') {
+        //       addKaboom(obj.screenPos());
+        //       wait(1, () => go("end"));
+        //     }
+        //   }
+        //   if (obj.is('stalagmite')) {
+        //     if (bean.state !== 'jump') {
+        //       addKaboom(obj.screenPos());
+        //       wait(1, () => go("end"));
+        //     }
+        //   }
+        // });
 
         // event handlers
         onKeyPress("up", jump);
@@ -212,7 +255,7 @@
       });
 
       // initialize game
-      go("game");
+      go("instructions");
     </script>
   </body>
 </html>
