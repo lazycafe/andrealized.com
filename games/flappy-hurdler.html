@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Flappy watermelon feast</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+  </head>
+  <body>
+    <div id="mycanvas" style="width: 100%; height: 300px;"></div>
+    <!-- <a href="/" style="position: absolute; top: 5; right: 0; z-index: 99999">Quit</a> -->
+    <script type="module">
+      import kaboom from "https://unpkg.com/kaboom@3000.0.1/dist/kaboom.mjs";
+
+      // initialize context
+      kaboom({
+        background: [49, 53, 59],
+        root: document.querySelector("#mycanvas"),
+      });
+
+      const GROUND_HEIGHT = 1;
+      const GROUND_LEVEL = height() - GROUND_HEIGHT;
+      const JUMP_FORCE = 1000;
+      const GRAVITY = 3000;
+      const STALAGMITE_HEIGHT = 80;
+      const STALACTITE_HEIGHT = 220;
+
+      let score = 0;
+
+      // loadSprite("bean", "/assets/bean.png");
+      // loadSprite("bean-low", "/assets/bean-low.png");
+      loadSpriteAtlas("/assets/beananim.png", {
+        "bean": {
+          x: 0,
+          y: 0,
+          width: 360,
+          height: 104,
+          sliceX: 3,
+          anims: {
+            idle: 0,
+            duck: 1,
+            jump: 2,
+          }
+        }
+      });
+      scene("start", () => {
+        let getText = () =>
+          `score: ${score}\ntap to start again`;
+
+        let titleText = add([
+          text(getText(), { size: 14 }),
+          pos(center()),
+          anchor("center"),
+        ]);
+
+        onClick(() => {
+          go("game");
+        });
+      });
+
+      scene("game", () => {
+        // initialize bean
+        let bean = add([
+          sprite("bean"),
+          state("idle", ["idle", "jump", "duck"]),
+          pos(12, 12),
+          area(),
+          offscreen({ destroy: false }),
+          body(),
+          "bean",
+        ]);
+
+        // initialize ground
+        setGravity(GRAVITY);
+        let ground = add([
+          rect(width(), GROUND_HEIGHT),
+          pos(0, GROUND_LEVEL),
+          outline(1),
+          area(),
+          body({ isStatic: true }),
+          color(33, 34, 36),
+          "ground",
+        ]);
+
+        // score
+        score = 0;
+        const scoreText = () => `score: ${score}`;
+
+        let scoreComponent = add([
+          text(scoreText(), {
+            size: 14,
+          }),
+          pos(300, 12),
+          anchor("center"),
+        ]);
+
+        // obstacles
+        function addStalagmiteOrStalactite() {
+          let randomInteger = randi(2);
+          if (randomInteger === 0) {
+            let stalagmite = add([
+              rect(15, STALAGMITE_HEIGHT),
+              area(),
+              outline(4),
+              pos(width(), GROUND_LEVEL),
+              anchor("botleft"),
+              offscreen({ destroy: true }),
+              // color(255, 180, 255),
+              move(LEFT, 300),
+              "obstacle",
+              "stalagmite",
+            ]);
+
+            stalagmite.onExitScreen(() => {
+              score++;
+              scoreComponent.text = scoreText();
+            });
+          } else {
+            let stalactite = add([
+              rect(15, STALACTITE_HEIGHT),
+              area(),
+              outline(4),
+              pos(width(), STALACTITE_HEIGHT),
+              anchor("botleft"),
+              offscreen({ destroy: true }),
+              // color(255, 180, 255),
+              move(LEFT, 300),
+              "obstacle",
+              "stalactite",
+            ]);
+
+            stalactite.onExitScreen(() => {
+              score++;
+              scoreComponent.text = scoreText();
+            });
+          }
+
+          wait(rand(0.5, 1.3), () => {
+            addStalagmiteOrStalactite();
+          });
+        }
+
+        addStalagmiteOrStalactite();
+
+        // bean actions
+        function jump() {
+          if (bean.isGrounded()) {
+            bean.enterState("jump");
+          }
+	      }
+
+        function duck() {
+          if (bean.isGrounded()) {
+            bean.enterState("duck");
+          }
+	      }
+
+        function idle() {
+          bean.enterState("idle");
+        }
+
+        bean.onCollide("ground", () => {
+          idle();
+        });
+
+        bean.onCollide("obstacle", (obj) => {
+          if (obj.is('stalactite')) {
+            if (bean.state !== 'duck') {
+              go("start");
+            }
+          }
+          if (obj.is('stalagmite')) {
+            if (bean.state !== 'jump') {
+              go("start");
+            }
+          }
+        });
+
+        // event handlers
+        onKeyPress("up", jump);
+        onKeyDown("down", duck);
+        onKeyRelease("down", idle);
+
+        onMouseDown(() => {
+          let { y } = mousePos();
+          let half = height() / 2;
+          if (y > half) {
+            duck();
+          } else {
+            jump();
+          }
+        });
+
+        onMouseRelease(() => {
+          let { y } = mousePos();
+          let half = height() / 2;
+          if (y > half) {
+            idle();
+          }
+        });
+
+        bean.onStateEnter("duck", () => {
+          bean.play("duck");
+        });
+
+        bean.onStateEnter("jump", () => {
+          bean.play("jump");
+          bean.jump(JUMP_FORCE);
+        });
+
+        bean.onStateEnter("idle", () => {
+          bean.play("idle");
+        });
+      });
+
+      // initialize game
+      go("game");
+    </script>
+  </body>
+</html>

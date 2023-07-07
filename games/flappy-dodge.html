@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Flappy watermelon feast</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+  </head>
+  <body>
+    <!-- <div id="mycanvas" style="width: 100%; height: 300px; background-color: green;"></div> -->
+    <!-- <a href="/" style="position: absolute; top: 5; right: 0; z-index: 99999">Quit</a> -->
+    <script type="module">
+      import kaboom from "https://unpkg.com/kaboom@3000.0.1/dist/kaboom.mjs";
+
+      // initialize context
+      kaboom({
+        background: [49, 53, 59],
+      });
+
+      let score = 0;
+      const groundHeight = .4;
+      const groundLevel = height() * groundHeight;
+      
+      loadSprite("bean", "https://kaboomjs.com/sprites/bean.png");
+      loadSprite("bean-low", "/assets/bean-low.png");
+      loadSprite("watermelon", "https://kaboomjs.com/sprites/watermelon.png");
+      scene("start", () => {
+        let clicks = 5;
+
+        let getText = () =>
+          `score: ${score}\nTap ${clicks} times to start again`;
+
+        let titleText = add([
+          text(getText(), { size: 14 }),
+          pos(center()),
+          anchor("center"),
+        ]);
+
+        onClick(() => {
+          clicks--;
+          titleText.text = getText();
+          if (clicks === 0) {
+            go("game");
+          }
+        });
+      });
+
+      scene("game", () => {
+        score = 0;
+
+        const scoreText = () => `score: ${score}`;
+
+        setGravity(3500);
+
+        // initialize bean
+        let bean = add([
+          sprite("bean"),
+          pos(12, 300),
+          area(),
+          offscreen({ destroy: false }),
+          body(),
+          "bean",
+        ]);
+
+        // initialize ground
+        let ground = add([
+          rect(width(), groundLevel),
+          pos(0, height() - groundLevel),
+          outline(1),
+          area(),
+          body({ isStatic: true }),
+          color(33, 34, 36),
+        ]);
+
+        // initialize ceiling
+        let ceiling = add([
+          rect(width(), groundLevel),
+          pos(0, 0),
+          outline(1),
+          area(),
+          body({ isStatic: true }),
+          color(33, 34, 36),
+        ]);
+
+        bean.onExitScreen(() => {
+          bean.moveTo(12, groundLevel + 50);
+        });
+
+        let scoreComponent = add([
+          text(scoreText(), {
+            size: 14,
+          }),
+          pos(300, 12),
+          anchor("center"),
+        ]);
+
+        function addStalagmite(size = 1) {
+          // add tree
+          let melon = add([
+            rect(20, (height() - (groundLevel * 2)) / 2),
+            scale(size),
+            area(),
+            outline(4),
+            pos(width(), height() - groundLevel),
+            anchor("botleft"),
+            offscreen({ destroy: true }),
+            // color(255, 180, 255),
+            move(LEFT, 240),
+            "stalagmite", // add a tag here
+          ]);
+
+          melon.onExitScreen(() => {
+            score++;
+            scoreComponent.text = scoreText();
+            console.log('score!!!!');
+            // destroy(melon);
+          });
+
+          wait(rand(0.25, 1), () => {
+            addStalagmite(rand(0.25, 1));
+          });
+        }
+
+        addStalagmite();
+
+        onCollide("stalagmite", "bean", (args) => {
+          shake();
+          go("start");
+        });
+
+        // add a kaboom on mouse click
+        onClick(() => {
+          // addKaboom(mousePos())
+          bean.jump(1000);
+          // bean.move(direction, 1200);
+        });
+        onKeyPress("space", () => {
+          bean.jump(1000);
+        });
+      });
+
+      go("game");
+    </script>
+  </body>
+</html>
