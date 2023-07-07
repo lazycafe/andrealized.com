@@ -5,14 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
   </head>
   <body>
-    <!-- <a href="/" style="position: absolute; top: 5; right: 0; z-index: 99999">Quit</a> -->
+    <a href="/" style="position: absolute; top: 5; right: 0; z-index: 99999; color: white; text-decoration: none; padding: 5px; font-family: Arial, Helvetica, sans-serif;">x</a>
     <script type="module">
       import kaboom from "https://unpkg.com/kaboom@3000.0.1/dist/kaboom.mjs";
 
       // initialize context
       kaboom({
         background: [49, 53, 59],
-        // root: document.querySelector("#mycanvas"),
       });
 
       const GROUND_HEIGHT = 200;
@@ -47,7 +46,7 @@
 
       scene("instructions", () => {
         let getText = () =>
-          `tap to start\n\n\ninstructions:\n jump: UP ARROW or tap the sky\n duck: DOWN ARROW or tap the ground`;
+          `tap to start (sound on!)\n\n\ninstructions:\n jump: UP ARROW or tap the sky\n duck: DOWN ARROW or tap the ground`;
 
         let titleText = add([
           text(getText(), { size: 14 }),
@@ -159,7 +158,7 @@
             });
           }
 
-          wait(rand(0.5, 1.3), () => {
+          wait(rand(0.6, 1.2), () => {
             addStalagmiteOrStalactite();
           });
         }
